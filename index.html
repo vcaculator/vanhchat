@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VANH-CHAT // Cyberpunk Matrix Messenger</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Cyberpunk Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            cyan: '#00f3ff',
+                            magenta: '#ff0055',
+                            purple: '#b000ff',
+                            neon: '#39ff14',
+                            dark: '#0a0d14',
+                            glass: 'rgba(15, 23, 42, 0.75)',
+                            border: 'rgba(0, 243, 255, 0.25)',
+                        }
+                    },
+                    boxShadow: {
+                        'glow-cyan': '0 0 15px rgba(0, 243, 255, 0.4), inset 0 0 15px rgba(0, 243, 255, 0.2)',
+                        'glow-magenta': '0 0 15px rgba(255, 0, 85, 0.4), inset 0 0 15px rgba(255, 0, 85, 0.2)',
+                        'glow-purple': '0 0 20px rgba(176, 0, 255, 0.5)',
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite alternate',
+                        'grid-move': 'gridMove 20s linear infinite',
+                        'scanline': 'scanline 8s linear infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%': { boxShadow: '0 0 8px rgba(0,243,255,0.3)' },
+                            '100%': { boxShadow: '0 0 22px rgba(0,243,255,0.8), 0 0 30px rgba(255,0,85,0.4)' }
+                        },
+                        gridMove: {
+                            '0%': { backgroundPosition: '0 0' },
+                            '100%': { backgroundPosition: '50px 50px' }
+                        },
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(1000%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Custom Scrollbar & Cyberpunk Effects */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 13, 20, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f3ff;
+            border-radius: 4px;
+            box-shadow: 0 0 8px #00f3ff;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff0055;
+        }
+
+        .cyber-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+        }
+
+        .glass-panel {
+            background: rgba(13, 18, 30, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .glass-panel-magenta {
+            background: rgba(25, 10, 20, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 0, 85, 0.3);
+        }
+
+        .cyber-clip {
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        .cyber-clip-btn {
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .glitch-text {
+            text-shadow: 2px 0 #ff0055, -2px 0 #00f3ff;
+        }
+        
+        .message-bubble-self {
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.15) 0%, rgba(176, 0, 255, 0.2) 100%);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            border-radius: 16px 16px 2px 16px;
+        }
+
+        .message-bubble-other {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px 16px 16px 2px;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 font-rajdhani overflow-hidden select-none bg-slate-950">
+
+    <!-- Background Canvas Particles / Grid -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute inset-0 cyber-grid animate-grid-move opacity-60"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950"></div>
+        <div class="absolute inset-0 bg-radial-at-c from-cyan-900/10 via-transparent to-transparent"></div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="relative z-10 flex h-full w-full overflow-hidden">
+
+        <!-- LOGIN MODAL / WELCOME SCREEN -->
+        <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md transition-all duration-500">
+            <div class="glass-panel cyber-clip w-full max-w-md p-6 sm:p-8 rounded-xl shadow-glow-cyan relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl"></div>
+
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 mb-3 shadow-glow-cyan">
+                        <i class="fa-solid fa-bolt text-3xl"></i>
+                    </div>
+                    <h1 class="font-orbitron text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-pink-500 glitch-text">
+                        VANH-CHAT
+                    </h1>
+                    <p class="text-xs text-cyan-300/70 font-mono mt-1 tracking-widest uppercase">
+                        // CYBER MATRIX MESH NETWORK v2.5
+                    </p>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+                    <!-- Nickname Input -->
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-cyan-400 mb-1 tracking-wider">
+                            <i class="fa-solid fa-user-astronaut mr-1"></i> CODENAME / NICKNAME
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="nicknameInput" maxlength="20" required autocomplete="off"
+                                class="w-full bg-slate-900/90 border border-cyan-500/40 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 font-semibold focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                                placeholder="Enter your alias...">
+                            <button type="button" onclick="generateRandomName()" class="absolute right-2 top-2.5 px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 text-xs rounded border border-cyan-400/30 transition-all font-mono">
+                                <i class="fa-solid fa-dice mr-1"></i> RANDOM
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Avatar Selection -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-mono uppercase text-cyan-400 tracking-wider">
+                                <i class="fa-solid fa-mask mr-1"></i> AVATAR MATRIX
+                            </label>
+                            <button type="button" onclick="randomizeAvatars()" class="text-xs text-pink-400 hover:text-pink-300 transition-colors font-mono">
+                                <i class="fa-solid fa-arrows-rotate mr-1"></i> SHUFFLE
+                            </button>
+                        </div>
+                        <div id="avatarGrid" class="grid grid-cols-4 gap-3">
+                            <!-- Dynamic Avatars generated here -->
+                        </div>
+                    </div>
+
+                    <!-- Connect Button -->
+                    <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 via-teal-400 to-pink-500 text-slate-950 font-orbitron font-extrabold rounded-lg hover:brightness-125 transition-all transform hover:-translate-y-0.5 active:translate-y-0 shadow-glow-cyan flex items-center justify-center space-x-2">
+                        <span>LAUNCH MATRIX CHAT</span>
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                        P2P Live Broadcast Sync Ready • Zero Logs
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEFT SIDEBAR: CHANNELS & USERS (Collapsible on Mobile) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 glass-panel border-r border-cyan-500/20 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:z-auto">
+            <!-- Sidebar Header -->
+            <div class="p-4 border-b border-cyan-500/20 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-pink-500 p-0.5 flex items-center justify-center shadow-glow-cyan">
+                        <div class="w-full h-full bg-slate-900 rounded-[7px] flex items-center justify-center">
+                            <i class="fa-solid fa-atom text-cyan-400 text-lg"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-orbitron font-bold text-lg text-slate-100 tracking-wider">VANH-CHAT</h2>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-xs font-mono text-emerald-400/90" id="networkStatus">SYSTEM ONLINE</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-cyan-400 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Current User Card -->
+            <div class="p-3 mx-3 my-3 glass-panel-magenta rounded-xl flex items-center space-x-3">
+                <div class="relative">
+                    <img id="myAvatar" src="" class="w-11 h-11 rounded-lg border border-pink-500/40 object-cover bg-slate-800">
+                    <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-slate-100 truncate font-orbitron text-sm" id="myNickname">Guest User</div>
+                    <div class="text-[11px] font-mono text-pink-400/90 flex items-center space-x-1">
+                        <i class="fa-solid fa-shield-halved text-[9px]"></i>
+                        <span>CYBER OPERATIVE</span>
+                    </div>
+                </div>
+                <button onclick="openProfileEdit()" class="text-slate-400 hover:text-cyan-400 p-1.5 rounded-lg hover:bg-slate-800/50">
+                    <i class="fa-solid fa-gear text-sm"></i>
+                </button>
+            </div>
+
+            <!-- CHANNELS NAVIGATION -->
+            <div class="flex-1 overflow-y-auto px-3 space-y-6 py-2">
+                <div>
+                    <div class="flex items-center justify-between px-2 mb-2 text-xs font-mono text-cyan-400/80 tracking-widest uppercase">
+                        <span>ROOM CHANNELS</span>
+                        <i class="fa-solid fa-hashtag text-[10px]"></i>
+                    </div>
+                    <nav class="space-y-1" id="channelsList">
+                        <!-- Channels generated dynamically -->
+                    </nav>
+                </div>
+
+                <!-- ONLINE MEMBERS LIST -->
+                <div>
+                    <div class="flex items-center justify-between px-2 mb-2 text-xs font-mono text-cyan-400/80 tracking-widest uppercase">
+                        <span>ACTIVE OPERATIVES</span>
+                        <span id="activeUserCount" class="bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full text-[10px] border border-cyan-500/30">1</span>
+                    </div>
+                    <div id="onlineUsersList" class="space-y-1.5">
+                        <!-- Online users injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer Controls -->
+            <div class="p-3 border-t border-cyan-500/20 flex items-center justify-between text-xs font-mono">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center space-x-2 text-slate-400 hover:text-cyan-400 px-2 py-1.5 rounded-md hover:bg-slate-800/50 transition-colors">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                    <span id="soundText">SFX ON</span>
+                </button>
+                <div class="text-slate-500 text-[10px]">v2.5 GLASS</div>
+            </div>
+        </aside>
+
+        <!-- MAIN CHAT AREA -->
+        <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-950/40">
+
+            <!-- CHAT HEADER -->
+            <header class="h-16 border-b border-cyan-500/20 glass-panel px-4 flex items-center justify-between z-20">
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleSidebar()" class="md:hidden text-cyan-400 text-xl p-2 rounded-lg hover:bg-cyan-500/10">
+                        <i class="fa-solid fa-bars-staggered"></i>
+                    </button>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-orbitron font-bold text-lg text-cyan-300" id="currentChannelName">#general</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono hidden sm:inline-block" id="currentChannelTopic">Public Matrix Lobby</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Header Actions -->
+                <div class="flex items-center space-x-2">
+                    <!-- Search Input Toggle -->
+                    <div class="relative hidden sm:block">
+                        <input type="text" id="searchInput" onkeyup="filterMessages()" placeholder="Search logs..." 
+                            class="bg-slate-900/80 border border-slate-700/60 rounded-full px-3 py-1.5 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400 w-36 focus:w-48 transition-all">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-500"></i>
+                    </div>
+
+                    <button onclick="clearChatHistory()" title="Clear Local Terminal Logs" class="p-2 text-slate-400 hover:text-pink-400 rounded-lg hover:bg-pink-500/10 transition-colors">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- MESSAGES CONTAINER -->
+            <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 relative">
+                <!-- Welcome Banner Inside Chat -->
+                <div class="text-center my-6">
+                    <div class="inline-block glass-panel px-6 py-3 rounded-2xl border border-cyan-500/30 shadow-glow-cyan max-w-md">
+                        <i class="fa-solid fa-shield-halved text-2xl text-cyan-400 mb-1"></i>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-sm">ENCRYPTED NEURAL CHANNEL</h3>
+                        <p class="text-xs text-slate-400 mt-1">Real-time cross-tab & multi-network synchronized stream active. Play sound on send/receive.</p>
+                    </div>
+                </div>
+
+                <!-- Messages will be rendered here dynamically -->
+                <div id="messageList" class="space-y-4"></div>
+            </div>
+
+            <!-- TYPING INDICATOR -->
+            <div id="typingIndicator" class="px-6 py-1 h-6 text-xs font-mono text-cyan-400/80 flex items-center space-x-2 opacity-0 transition-opacity duration-300">
+                <i class="fa-solid fa-keyboard animate-pulse"></i>
+                <span id="typingText">Someone is transmitting data...</span>
+            </div>
+
+            <!-- CHAT INPUT AREA -->
+            <footer class="p-3 sm:p-4 border-t border-cyan-500/20 glass-panel z-20">
+                <!-- Attachment/Simulator Previews -->
+                <div id="attachmentPreview" class="hidden mb-2 p-2 bg-slate-900/90 rounded-lg border border-cyan-500/30 flex items-center justify-between">
+                    <div class="flex items-center space-x-2 overflow-hidden">
+                        <img id="previewImg" src="" class="w-10 h-10 object-cover rounded border border-cyan-400/30">
+                        <span id="previewName" class="text-xs font-mono text-cyan-300 truncate">attachment.png</span>
+                    </div>
+                    <button onclick="removeAttachment()" class="text-pink-400 hover:text-pink-300 p-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Main Input Form -->
+                <form id="chatForm" onsubmit="sendMessage(event)" class="flex items-end space-x-2">
+                    <!-- Media / Tools Buttons -->
+                    <div class="flex items-center space-x-1 pb-1">
+                        <!-- Image Upload Simulator -->
+                        <button type="button" onclick="triggerImageUpload()" title="Attach Cyber Graphic" class="p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors">
+                            <i class="fa-solid fa-image text-lg"></i>
+                        </button>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+
+                        <!-- Emoji Picker Button -->
+                        <button type="button" onclick="toggleEmojiPicker()" title="Emoji Matrix" class="p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors relative">
+                            <i class="fa-solid fa-face-smile text-lg"></i>
+                        </button>
+
+                        <!-- Audio Voice Note Simulator -->
+                        <button type="button" id="voiceBtn" onclick="toggleVoiceRecording()" title="Record Audio Signal" class="p-2.5 text-slate-400 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors">
+                            <i class="fa-solid fa-microphone text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Text Field -->
+                    <div class="flex-1 relative">
+                        <textarea id="messageInput" rows="1" onkeydown="handleKeyDown(event)" oninput="handleTyping()" placeholder="Type a encrypted broadcast message..." required
+                            class="w-full bg-slate-900/90 border border-cyan-500/30 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 resize-none max-h-32 transition-all"></textarea>
+                    </div>
+
+                    <!-- Send Button -->
+                    <button type="submit" class="p-3.5 bg-gradient-to-tr from-cyan-500 to-pink-500 text-slate-950 rounded-xl hover:brightness-125 transition-all shadow-glow-cyan flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-paper-plane text-base"></i>
+                    </button>
+                </form>
+            </footer>
+
+            <!-- EMOJI PICKER POPUP -->
+            <div id="emojiPicker" class="hidden absolute bottom-20 left-4 z-40 glass-panel p-3 rounded-2xl border border-cyan-500/40 w-72 shadow-glow-cyan">
+                <div class="text-xs font-mono text-cyan-400 mb-2 border-b border-slate-700/60 pb-1 flex justify-between">
+                    <span>EMOJI MATRIX</span>
+                    <button onclick="toggleEmojiPicker()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="grid grid-cols-6 gap-2 text-xl max-h-48 overflow-y-auto" id="emojiGrid">
+                    <!-- Emojis populated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SOUND EFFECTS & WEB AUDIO ENGINE -->
+    <script>
+        // Web Audio API Sound Generator for Futuristic Cyber Effects
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playSend() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.12);
+                
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playReceive() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+        }
+
+        const soundFx = new SoundEngine();
+    </script>
+
+    <!-- MAIN CHAT APP LOGIC -->
+    <script>
+        // --- APP STATE ---
+        const APP_ID = 'vanh-chat-v2';
+        const CHANNELS = [
+            { id: 'general', name: '#general', topic: 'Public Matrix Lobby', icon: 'fa-comments' },
+            { id: 'tech', name: '#tech-core', topic: 'Cybernetics & Code', icon: 'fa-microchip' },
+            { id: 'chill-lounge', name: '#chill-lounge', topic: 'Lo-Fi Vibe Zone', icon: 'fa-mug-hot' },
+            { id: 'gaming', name: '#arcade-grid', topic: 'Cyber Games & Esports', icon: 'fa-gamepad' }
+        ];
+
+        let currentUser = {
+            id: 'usr_' + Math.random().toString(36).substr(2, 9),
+            nickname: '',
+            avatar: ''
+        };
+
+        let currentChannel = 'general';
+        let messages = [];
+        let attachedImage = null;
+        let isRecordingVoice = false;
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+        let typingTimeout = null;
+
+        // BroadcastChannel for instant live cross-tab communication
+        const chatChannel = new BroadcastChannel('vanh_chat_matrix_channel');
+
+        // Emojis collection
+        const EMOJI_LIST = ['🔥', '⚡', '🤖', '💀', '👽', '👑', '🚀', '💜', '😎', '🎮', '💻', '✨', '👍', '❤️', '🎉', '💩', '🔮', '💥', '👀', '🎯', '💯', '🍕', '🍻', '👾'];
+
+        // Preset Avatars (DiceBear Cyberpunk/Bots)
+        const AVATAR_SEEDS = ['Cyber1', 'VanhMaster', 'NeonRider', 'GhostCore', 'Astra', 'Viper', 'ZeroCool', 'Kusanagi'];
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAvatarGrid();
+            renderChannels();
+            renderEmojiPicker();
+            setupBroadcastListener();
+            loadLocalMessages();
+            
+            // Random default nickname
+            document.getElementById('nicknameInput').value = generateRandomAlias();
+        });
+
+        // Generate Avatar Seed URLs
+        function getAvatarUrl(seed) {
+            return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0f172a`;
+        }
+
+        function renderAvatarGrid() {
+            const container = document.getElementById('avatarGrid');
+            container.innerHTML = '';
+            
+            AVATAR_SEEDS.forEach((seed, index) => {
+                const url = getAvatarUrl(seed);
+                const isSelected = index === 0;
+                if (isSelected) currentUser.avatar = url;
+
+                const div = document.createElement('div');
+                div.className = `avatar-option cursor-pointer rounded-lg p-1 border-2 transition-all ${isSelected ? 'border-cyan-400 bg-cyan-500/20 shadow-glow-cyan' : 'border-slate-700 hover:border-slate-500 bg-slate-900/60'}`;
+                div.onclick = () => selectAvatar(div, url);
+                div.innerHTML = `<img src="${url}" class="w-full h-10 object-contain rounded">`;
+                container.appendChild(div);
+            });
+        }
+
+        function selectAvatar(el, url) {
+            document.querySelectorAll('.avatar-option').forEach(item => {
+                item.classList.remove('border-cyan-400', 'bg-cyan-500/20', 'shadow-glow-cyan');
+                item.classList.add('border-slate-700', 'bg-slate-900/60');
+            });
+            el.classList.remove('border-slate-700', 'bg-slate-900/60');
+            el.classList.add('border-cyan-400', 'bg-cyan-500/20', 'shadow-glow-cyan');
+            currentUser.avatar = url;
+            soundFx.playClick();
+        }
+
+        function randomizeAvatars() {
+            const newSeeds = Array.from({length: 8}, () => 'Bot_' + Math.random().toString(36).substring(7));
+            AVATAR_SEEDS.length = 0;
+            AVATAR_SEEDS.push(...newSeeds);
+            renderAvatarGrid();
+        }
+
+        function generateRandomAlias() {
+            const prefixes = ['Neo', 'Cyber', 'Vanh', 'Glitch', 'Nexus', 'Ghost', 'Zero', 'Vortex', 'Kage'];
+            const suffixes = ['X', '77', 'Core', 'Runner', 'Blade', 'Viper', 'Protocol', 'Byte'];
+            return prefixes[Math.floor(Math.random() * prefixes.length)] + '_' + suffixes[Math.floor(Math.random() * suffixes.length)];
+        }
+
+        function generateRandomName() {
+            document.getElementById('nicknameInput').value = generateRandomAlias();
+            soundFx.playClick();
+        }
+
+        // --- LOGIN HANDLER ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const inputVal = document.getElementById('nicknameInput').value.trim();
+            if (!inputVal) return;
+
+            currentUser.nickname = inputVal;
+            document.getElementById('myNickname').innerText = currentUser.nickname;
+            document.getElementById('myAvatar').src = currentUser.avatar;
+
+            // Animate Modal Dismiss
+            const modal = document.getElementById('loginModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => modal.classList.add('hidden'), 500);
+
+            soundFx.playSend();
+
+            // Broadcast Presence
+            broadcastSignal({
+                type: 'PRESENCE_JOIN',
+                user: currentUser
+            });
+
+            // Announce System Message
+            pushSystemMessage(`${currentUser.nickname} has connected to the neural link.`);
+        }
+
+        // --- CHANNELS MANAGEMENT ---
+        function renderChannels() {
+            const list = document.getElementById('channelsList');
+            list.innerHTML = '';
+
+            CHANNELS.forEach(ch => {
+                const isActive = ch.id === currentChannel;
+                const btn = document.createElement('button');
+                btn.onclick = () => switchChannel(ch.id);
+                btn.className = `w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    isActive 
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-glow-cyan' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`;
+                btn.innerHTML = `
+                    <i class="fa-solid ${ch.icon} text-sm ${isActive ? 'text-cyan-400' : 'text-slate-500'}"></i>
+                    <span class="font-orbitron tracking-wider flex-1 text-left">${ch.name}</span>
+                `;
+                list.appendChild(btn);
+            });
+        }
+
+        function switchChannel(channelId) {
+            currentChannel = channelId;
+            const channelObj = CHANNELS.find(c => c.id === channelId);
+            document.getElementById('currentChannelName').innerText = channelObj.name;
+            document.getElementById('currentChannelTopic').innerText = channelObj.topic;
+
+            renderChannels();
+            renderMessages();
+            soundFx.playClick();
+
+            // Mobile view sidebar auto close
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
+        // --- MESSAGING ENGINE ---
+        function sendMessage(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if (!text && !attachedImage) return;
+
+            const msgObj = {
+                id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                channel: currentChannel,
+                sender: currentUser,
+                text: text,
+                image: attachedImage,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                reactions: {}
+            };
+
+            messages.push(msgObj);
+            saveLocalMessages();
+            renderMessages();
+            scrollToBottom();
+
+            // Broadcast to other live browser tabs/windows
+            broadcastSignal({
+                type: 'NEW_MESSAGE',
+                message: msgObj
+            });
+
+            // Reset Input
+            input.value = '';
+            input.style.height = 'auto';
+            removeAttachment();
+            soundFx.playSend();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messageList');
+            container.innerHTML = '';
+
+            const filtered = messages.filter(m => m.channel === currentChannel);
+
+            filtered.forEach(msg => {
+                const isSelf = msg.sender.id === currentUser.id;
+                const msgEl = document.createElement('div');
+                msgEl.className = `flex space-x-3 ${isSelf ? 'flex-row-reverse space-x-reverse' : 'flex-row'} items-end group`;
+
+                // Avatar
+                const avatarMarkup = `
+                    <img src="${msg.sender.avatar}" class="w-9 h-9 rounded-lg border border-cyan-500/30 object-cover bg-slate-900 flex-shrink-0">
+                `;
+
+                // Content Box
+                let mediaMarkup = '';
+                if (msg.image) {
+                    mediaMarkup = `<img src="${msg.image}" class="max-w-xs max-h-52 rounded-lg border border-cyan-500/20 my-2 object-cover">`;
+                }
+
+                // Voice Audio Simulator Bubble
+                let audioMarkup = '';
+                if (msg.isAudio) {
+                    audioMarkup = `
+                        <div class="flex items-center space-x-3 my-1 p-2 bg-slate-900/80 rounded-lg border border-pink-500/30">
+                            <button onclick="playSimulatedAudio(this)" class="w-8 h-8 rounded-full bg-pink-500 text-slate-950 flex items-center justify-center">
+                                <i class="fa-solid fa-play text-xs"></i>
+                            </button>
+                            <div class="flex-1 space-y-1">
+                                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-pink-500 w-1/3"></div>
+                                </div>
+                                <span class="text-[10px] font-mono text-pink-300">VOICE_SIGNAL_${msg.duration || '0:03'}.wav</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Reactions Bar
+                let reactionsMarkup = '';
+                const reactionKeys = Object.keys(msg.reactions || {});
+                if (reactionKeys.length > 0) {
+                    reactionsMarkup = `<div class="flex flex-wrap gap-1 mt-1.5">`;
+                    reactionKeys.forEach(emoji => {
+                        const count = msg.reactions[emoji].length;
+                        reactionsMarkup += `
+                            <button onclick="addReaction('${msg.id}', '${emoji}')" class="px-1.5 py-0.5 rounded-full text-[11px] bg-slate-800/80 border border-cyan-500/30 text-cyan-300 flex items-center space-x-1">
+                                <span>${emoji}</span>
+                                <span class="font-mono text-[10px]">${count}</span>
+                            </button>
+                        `;
+                    });
+                    reactionsMarkup += `</div>`;
+                }
+
+                msgEl.innerHTML = `
+                    ${avatarMarkup}
+                    <div class="max-w-[78%] sm:max-w-md">
+                        <div class="flex items-center space-x-2 mb-1 ${isSelf ? 'justify-end' : 'justify-start'}">
+                            <span class="text-xs font-orbitron font-bold ${isSelf ? 'text-pink-400' : 'text-cyan-300'}">${msg.sender.nickname}</span>
+                            <span class="text-[10px] font-mono text-slate-500">${msg.timestamp}</span>
+                        </div>
+                        <div class="${isSelf ? 'message-bubble-self text-slate-100' : 'message-bubble-other text-slate-200'} p-3 text-sm leading-relaxed break-words relative shadow-lg">
+                            ${msg.text ? escapeHtml(msg.text) : ''}
+                            ${mediaMarkup}
+                            ${audioMarkup}
+                        </div>
+                        ${reactionsMarkup}
+                    </div>
+
+                    <!-- Action Hover (Reaction Bar) -->
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 pb-1">
+                        <button onclick="quickReact('${msg.id}', '🔥')" class="hover:scale-125 transition-transform text-xs">🔥</button>
+                        <button onclick="quickReact('${msg.id}', '❤️')" class="hover:scale-125 transition-transform text-xs">❤️</button>
+                        <button onclick="quickReact('${msg.id}', '😂')" class="hover:scale-125 transition-transform text-xs">😂</button>
+                    </div>
+                `;
+
+                container.appendChild(msgEl);
+            });
+        }
+
+        // --- BROADCAST & MULTI-TAB LIVE SYNC ---
+        function setupBroadcastListener() {
+            chatChannel.onmessage = (event) => {
+                const data = event.data;
+
+                if (data.type === 'NEW_MESSAGE') {
+                    messages.push(data.message);
+                    if (data.message.channel === currentChannel) {
+                        renderMessages();
+                        scrollToBottom();
+                        soundFx.playReceive();
+                    }
+                } else if (data.type === 'REACTION') {
+                    const msg = messages.find(m => m.id === data.msgId);
+                    if (msg) {
+                        if (!msg.reactions) msg.reactions = {};
+                        if (!msg.reactions[data.emoji]) msg.reactions[data.emoji] = [];
+                        if (!msg.reactions[data.emoji].includes(data.userId)) {
+                            msg.reactions[data.emoji].push(data.userId);
+                            renderMessages();
+                        }
+                    }
+                } else if (data.type === 'TYPING') {
+                    showTypingIndicator(data.user.nickname);
+                }
+            };
+        }
+
+        function broadcastSignal(payload) {
+            chatChannel.postMessage(payload);
+        }
+
+        // --- REACTIONS ENGINE ---
+        function quickReact(msgId, emoji) {
+            addReaction(msgId, emoji);
+        }
+
+        function addReaction(msgId, emoji) {
+            const msg = messages.find(m => m.id === msgId);
+            if (!msg) return;
+
+            if (!msg.reactions) msg.reactions = {};
+            if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+
+            const userIndex = msg.reactions[emoji].indexOf(currentUser.id);
+            if (userIndex > -1) {
+                msg.reactions[emoji].splice(userIndex, 1);
+                if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
+            } else {
+                msg.reactions[emoji].push(currentUser.id);
+            }
+
+            saveLocalMessages();
+            renderMessages();
+            soundFx.playClick();
+
+            broadcastSignal({
+                type: 'REACTION',
+                msgId: msgId,
+                emoji: emoji,
+                userId: currentUser.id
+            });
+        }
+
+        // --- AUDIO VOICE SIMULATOR ---
+        function toggleVoiceRecording() {
+            const btn = document.getElementById('voiceBtn');
+            if (!isRecordingVoice) {
+                isRecordingVoice = true;
+                recordingSeconds = 0;
+                btn.classList.add('text-pink-500', 'animate-pulse');
+                btn.title = "Click to transmit voice note";
+
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                }, 1000);
+            } else {
+                clearInterval(recordingTimer);
+                isRecordingVoice = false;
+                btn.classList.remove('text-pink-500', 'animate-pulse');
+
+                // Send simulated voice message
+                const msgObj = {
+                    id: 'msg_' + Date.now(),
+                    channel: currentChannel,
+                    sender: currentUser,
+                    text: '',
+                    isAudio: true,
+                    duration: `0:0${Math.max(1, recordingSeconds)}`,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    reactions: {}
+                };
+
+                messages.push(msgObj);
+                renderMessages();
+                scrollToBottom();
+                soundFx.playSend();
+
+                broadcastSignal({ type: 'NEW_MESSAGE', message: msgObj });
+            }
+        }
+
+        function playSimulatedAudio(btn) {
+            const icon = btn.querySelector('i');
+            icon.className = 'fa-solid fa-square text-xs';
+            soundFx.playReceive();
+            setTimeout(() => {
+                icon.className = 'fa-solid fa-play text-xs';
+            }, 2500);
+        }
+
+        // --- EMOJI PICKER ---
+        function renderEmojiPicker() {
+            const grid = document.getElementById('emojiGrid');
+            grid.innerHTML = '';
+            EMOJI_LIST.forEach(emoji => {
+                const btn = document.createElement('button');
+                btn.className = 'hover:scale-125 transition-transform p-1.5 text-center';
+                btn.innerText = emoji;
+                btn.onclick = () => {
+                    const input = document.getElementById('messageInput');
+                    input.value += emoji;
+                    toggleEmojiPicker();
+                    input.focus();
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.classList.toggle('hidden');
+            soundFx.playClick();
+        }
+
+        // --- IMAGE ATTACHMENT SIMULATOR ---
+        function triggerImageUpload() {
+            document.getElementById('imageInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                attachedImage = e.target.result;
+                document.getElementById('previewImg').src = attachedImage;
+                document.getElementById('previewName').innerText = file.name;
+                document.getElementById('attachmentPreview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeAttachment() {
+            attachedImage = null;
+            document.getElementById('imageInput').value = '';
+            document.getElementById('attachmentPreview').classList.add('hidden');
+        }
+
+        // --- TYPING INDICATOR ---
+        function handleTyping() {
+            broadcastSignal({
+                type: 'TYPING',
+                user: currentUser
+            });
+        }
+
+        function showTypingIndicator(name) {
+            const ind = document.getElementById('typingIndicator');
+            document.getElementById('typingText').innerText = `${name} is broadcasting data...`;
+            ind.classList.remove('opacity-0');
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                ind.classList.add('opacity-0');
+            }, 2000);
+        }
+
+        // --- SYSTEM MESSAGES & LOCAL STORAGE ---
+        function pushSystemMessage(text) {
+            const msgObj = {
+                id: 'sys_' + Date.now(),
+                channel: currentChannel,
+                sender: { id: 'sys', nickname: 'SYSTEM_BOT', avatar: getAvatarUrl('CyberSystem') },
+                text: text,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                reactions: {}
+            };
+            messages.push(msgObj);
+            renderMessages();
+            scrollToBottom();
+        }
+
+        function saveLocalMessages() {
+            try {
+                localStorage.setItem(APP_ID + '_msgs', JSON.stringify(messages.slice(-50)));
+            } catch (e) { console.error(e); }
+        }
+
+        function loadLocalMessages() {
+            try {
+                const data = localStorage.getItem(APP_ID + '_msgs');
+                if (data) messages = JSON.parse(data);
+                renderMessages();
+            } catch (e) { console.error(e); }
+        }
+
+        function clearChatHistory() {
+            messages = messages.filter(m => m.channel !== currentChannel);
+            saveLocalMessages();
+            renderMessages();
+            soundFx.playClick();
+        }
+
+        // --- UI UTILS ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+            soundFx.playClick();
+        }
+
+        function toggleSound() {
+            soundFx.muted = !soundFx.muted;
+            document.getElementById('soundText').innerText = soundFx.muted ? 'SFX OFF' : 'SFX ON';
+            document.getElementById('soundIcon').className = soundFx.muted ? 'fa-solid fa-volume-xmark text-slate-500' : 'fa-solid fa-volume-high text-cyan-400';
+        }
+
+        function filterMessages() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const allBubbles = document.querySelectorAll('#messageList > div');
+            allBubbles.forEach(b => {
+                const text = b.innerText.toLowerCase();
+                b.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
